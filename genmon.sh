@@ -10,11 +10,11 @@ check_internet() {
 
 if check_internet; then
 	# Fetch the country information using ipinfo.io
-	response=$(curl -s https://ipinfo.io)
-	status=$(echo "$response" | grep -o '"status": [0-9]*' | awk '{print $2}')
+	response=$(curl -s -w "%{http_code}" https://ipinfo.io)
+	status_code=${response: -3}
 	country=$(echo "$response" | grep -o '"country": "[^"]*' | cut -d'"' -f4)
 
-	if [ "$status" = "429" ]; then
+	if [ "$status_code" != "200" ]; then
 		echo "<txt><span weight=\"bold\" fgcolor=\"#FF0000\">not avail.</span></txt>"
 	else
 		# Set the color based on the country
