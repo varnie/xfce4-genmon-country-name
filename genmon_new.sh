@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 
-#rnd="$RANDOM"
-#quarter=$(( 32768 / 4 ))
-#if [ "$rnd" -le "$quarter" ];  then
-#    # skip everything in 1/4 of cases approximately
-#    exit 1
-#fi
+if [ $(( RANDOM % 4 )) -eq 0 ]; then
+    # Skip execution 25% of the time
+    echo "EXIT"
+    exit 1
+fi
 
 # Function to check internet connectivity
 check_internet() {
