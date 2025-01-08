@@ -2,7 +2,6 @@
 
 if [ $(( RANDOM % 4 )) -eq 0 ]; then
     # Skip execution 25% of the time
-    echo "EXIT"
     exit 1
 fi
 
