@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
 
+#rnd="$RANDOM"
+#quarter=$(( 32768 / 4 ))
+#if [ "$rnd" -le "$quarter" ];  then
+#    # skip everything in 1/4 of cases approximately
+#    exit 1
+#fi
+
 # Function to check internet connectivity
 check_internet() {
     # Ping Google to check for internet connection
-    if ping -q -c 1 -W 1 google.com >/dev/null 2>&1; then
+    if ping -q -c 1 -W 2 8.8.8.8 >/dev/null 2>&1; then
         return 0  # Connected
     else
         return 1  # Not connected
