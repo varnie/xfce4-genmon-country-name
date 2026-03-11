@@ -1,37 +1,48 @@
 #!/usr/bin/env bash
 
-check_internet() {
-    if ping -q -c 1 -W 1 google.com >/dev/null; then
-        return 0  # success (connected)
-    else
-        return 1  # failure (disconnected)
+# 1. Prevent multiple instances if a previous request is still hanging
+if pidof -x $(basename "$0") -o %PPID >/dev/null; then exit 0; fi
+
+# 2. Randomize: average 20s (range 15-25s)
+# Спит от 0 до 10 секунд (рандомно)
+sleep $(( RANDOM % 11 ))
+
+# 3. Main Logic
+TIMEOUT=5
+
+get_country() {
+    local url="$1"
+    local name="$2"
+    response=$(curl -s --connect-timeout $TIMEOUT --max-time $TIMEOUT -w "\n%{http_code}" "$url")
+    http_code=$(echo "$response" | tail -1)
+    response=$(echo "$response" | sed '$d')
+    if [ "$http_code" -ge 400 ]; then
+        echo "[$name] HTTP $http_code" >&2
+        return 1
     fi
+    if [ -z "$response" ]; then
+        echo "[$name] empty response" >&2
+        return 1
+    fi
+    country_code=$(echo "$response" | grep -oE '"countryCode":"[^"]*|"country": "[^"]*' | cut -d'"' -f4 | tail -1)
+    if [ -z "$country_code" ]; then
+        echo "[$name] no country in response" >&2
+        return 1
+    fi
+    echo "[$name] OK: $country_code" >&2
+    echo "$country_code"
+    return 0
 }
 
-if check_internet; then
-  # fetch the country information using ipinfo.io
-  response=$(curl -s -w "%{http_code}" https://ipinfo.io)
-  status_code=${response: -3}
-  country=$(echo "$response" | grep -o '"country": "[^"]*' | cut -d'"' -f4)
+country=$(get_country "https://ipinfo.io" "ipinfo.io") || \
+    country=$(get_country "http://ip-api.com/json/?fields=countryCode" "ip-api.com")
 
-  if [ "$status_code" != "200" ]; then
-    echo "<txt><span weight=\"bold\" fgcolor=\"#FF0000\">not avail.</span></txt>"
-  else
-    # set the color based on the country
-    if [ "$country" = "RU" ]; then
-      color="#FF0000"  # Red for Russia
-    else
-      color="#00FF00"  # Green for other countries
-    fi
-
-    # Display the country name in the specified color and bold style
-    echo "<txt><span weight=\"bold\" fgcolor=\"$color\">$country</span></txt>"
-  fi
-
-  # provide an empty tooltip (you can customize this with more information if needed)
-  echo "<tool></tool>"
+if [ -n "$country" ]; then
+    [[ "$country" == "RU" ]] && color="#FF0000" || color="#00FF00"
+    echo "<txt><span weight='bold' fgcolor='$color'>$country</span></txt>"
 else
-    # disconnected
-    echo "<txt>No connection</txt>"
-    echo "<tool></tool>"
+    echo "<txt><span weight='bold' fgcolor='#FF0000'>Err</span></txt>"
 fi
+
+echo "<tool>Last check: $(date +%H:%M:%S)</tool>"
+
