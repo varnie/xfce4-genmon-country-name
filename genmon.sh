@@ -8,7 +8,7 @@ if pidof -x $(basename "$0") -o %PPID >/dev/null; then exit 0; fi
 sleep $(( RANDOM % 11 ))
 
 # 3. Main Logic
-TIMEOUT=5
+TIMEOUT=10
 
 get_country() {
     local url="$1"
@@ -37,12 +37,16 @@ get_country() {
 services=(
     "https://ipinfo.io|ipinfo.io"
     "http://ip-api.com/json/?fields=countryCode|ip-api.com"
+    "https://ipapi.co/json/|ipapi.co"
 )
 ordered=($(shuf -e "${services[@]}"))
 
-echo "Trying: ${ordered[0]#*|}"
-country=$(get_country "${ordered[0]%|*}" "${ordered[0]#*|}") || \
-    country=$(get_country "${ordered[1]%|*}" "${ordered[1]#*|}")
+for svc in "${ordered[@]}"; do
+    name="${svc#*|}"
+    url="${svc%|*}"
+    echo "Trying: $name"
+    country=$(get_country "$url" "$name") && break
+done
 
 if [ -n "$country" ]; then
     [[ "$country" == "RU" ]] && color="#FF0000" || color="#00FF00"
