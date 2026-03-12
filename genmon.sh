@@ -34,8 +34,15 @@ get_country() {
     return 0
 }
 
-country=$(get_country "https://ipinfo.io" "ipinfo.io") || \
-    country=$(get_country "http://ip-api.com/json/?fields=countryCode" "ip-api.com")
+services=(
+    "https://ipinfo.io|ipinfo.io"
+    "http://ip-api.com/json/?fields=countryCode|ip-api.com"
+)
+ordered=($(shuf -e "${services[@]}"))
+
+echo "Trying: ${ordered[0]#*|}"
+country=$(get_country "${ordered[0]%|*}" "${ordered[0]#*|}") || \
+    country=$(get_country "${ordered[1]%|*}" "${ordered[1]#*|}")
 
 if [ -n "$country" ]; then
     [[ "$country" == "RU" ]] && color="#FF0000" || color="#00FF00"
